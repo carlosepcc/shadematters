@@ -37,6 +37,8 @@ class Unit {
     this.agility = color.green; // Assuming green affects agility
     this.x = x; // Add x position
     this.y = y; // Add y position
+    this.intervalId = null; // Store the interval ID
+    this.startMoving();
   }
 
   draw(ctx, x, y) {
@@ -62,6 +64,54 @@ class Unit {
     ctx.strokeStyle = "#ccc"; // Light stroke color
     ctx.lineWidth = 1;
     ctx.stroke();
+  }
+
+  startMoving() {
+    // Calculate the interval based on the unit's agility stat
+    // Assuming a higher agility value results in a shorter interval
+    const interval = 122500 / this.agility;
+
+    // Clear any existing interval for this unit
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+
+    // Start a new interval for moving the unit
+    this.intervalId = setInterval(() => this.move(), interval);
+  }
+
+  move() {
+    const directions = [
+      [0, 1], // Down
+      [1, 0], // Right
+      [0, -1], // Up
+      [-1, 0], // Left
+      [1, 1], // Down-Right
+      [-1, 1], // Down-Right
+      [1, -1], // Up-Right
+      [-1, -1], // Up-Left
+    ];
+
+    const validDirections = directions.filter(([dx, dy]) => {
+      const newX = this.x + dx;
+      const newY = this.y + dy;
+      return (
+        newX >= 0 &&
+        newX < gridWidth &&
+        newY >= 0 &&
+        newY < gridHeight &&
+        !Building.existsAt(newX, newY, buildings) &&
+        !units.some((unit) => unit.x === newX && unit.y === newY) // Check if the cell is not occupied by another unit
+      );
+    });
+
+    if (validDirections.length > 0) {
+      const [dx, dy] =
+        validDirections[Math.floor(Math.random() * validDirections.length)];
+      this.x += dx;
+      this.y += dy;
+    }
+    init();
   }
 }
 
@@ -112,7 +162,7 @@ class Building {
     const newUnit = new Unit(unitColor, x, y); // Pass x and y to the constructor
     newUnit.draw(ctx, x, y);
     units.push(newUnit); // Add the new unit to the units array
-
+    init();
     {
       const maxStat = Math.max(
         newUnit.attack,
@@ -183,8 +233,11 @@ const buildings = [];
 const units = [];
 
 function placeBuilding(x, y) {
-  if (Building.existsAt(x, y, buildings)) {
-    console.log("A building already exists at this location.");
+  if (
+    Building.existsAt(x, y, buildings) ||
+    units.some((unit) => unit.x === x && unit.y === y)
+  ) {
+    console.log("Something already is at this location.");
     return;
   }
 
