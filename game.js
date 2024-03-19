@@ -42,14 +42,28 @@ class Unit {
   }
 
   draw(ctx, x, y) {
-    const radius = cellSize / 2; // Assuming cellSize is the size of the cell
+    const radius = cellSize / 2 + this.defense / 255; // Assuming cellSize is the size of the cell
     const centerX = x * cellSize + radius;
     const centerY = y * cellSize + radius;
-    const shapeType = 6;
-    const angle = (2 * Math.PI) / shapeType;
+    // Calculate the number of sides based on attack
+    const sides = Math.max(3, 12 - this.attack / 25); // Ensure at least 3 sides
+
+    const angle = (2 * Math.PI) / sides;
+    // Calculate size based on defense
+
+    // Calculate color tone based on stats
+    const r = this.attack; // Assuming attack influences red color
+    const g = this.agility; // Assuming agility influences green color
+    const b = this.defense; // Assuming defense influences blue color
+
+    // Set the fill style to a color based on stats
+    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+    // Generate a random rotation angle for the unit
+    const rotationAngle = Math.random() * 2 * Math.PI;
 
     ctx.beginPath();
-    for (let i = 0; i < shapeType; i++) {
+    for (let i = 0; i < sides; i++) {
       let xx = centerX + radius * Math.cos(angle * i);
       let yy = centerY + radius * Math.sin(angle * i);
       if (i === 0) {
