@@ -75,7 +75,9 @@ class Unit {
     ctx.closePath();
     ctx.fillStyle = `rgb(${this.color.red}, ${this.color.green}, ${this.color.blue})`;
     ctx.fill();
-    ctx.strokeStyle = "#ccc"; // Light stroke color
+    ctx.strokeStyle = `rgb(${this.color.red - 50}, ${this.color.green - 50}, ${
+      this.color.blue - 50
+    })`; // Light stroke color
     ctx.lineWidth = 1;
     ctx.stroke();
   }
@@ -125,6 +127,9 @@ class Unit {
       this.x += dx;
       this.y += dy;
     }
+
+    // Play a sound effect related to the unit's agility
+    // playSound(this.agility * 0.1); // Adjust the multiplier as needed
     init();
   }
 }
@@ -176,6 +181,8 @@ class Building {
     const newUnit = new Unit(unitColor, x, y); // Pass x and y to the constructor
     newUnit.draw(ctx, x, y);
     units.push(newUnit); // Add the new unit to the units array
+    // Play a sound effect for unit production
+    playSound(this.color.green * 1.2); // Using green for frequency, square wave for a different sound
     init();
     {
       const maxStat = Math.max(
@@ -304,3 +311,28 @@ function init() {
 
 // Start the game
 init();
+
+// AUDIO & SFX
+// sfx.js
+let isPlaying = false;
+
+function playSound(frequency, type = "sine", immediate = true) {
+  if (!immediate && isPlaying) {
+    return; // Do not play if another sound is already playing
+  }
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  const audioContext = new AudioContext();
+  const oscillator = audioContext.createOscillator();
+  oscillator.type = type;
+  oscillator.frequency.value = frequency; // value in hertz
+  oscillator.connect(audioContext.destination);
+  oscillator.start();
+
+  isPlaying = true;
+  oscillator.onended = () => {
+    isPlaying = false;
+  };
+
+  oscillator.stop(audioContext.currentTime + 0.1); // Stop after 0.5 seconds
+}
