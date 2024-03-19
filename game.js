@@ -72,6 +72,7 @@ class Building {
     this.width = width;
     this.height = height;
     this.color = color;
+    this.intervalId = null; // Store the interval ID
   }
 
   draw(ctx) {
@@ -130,6 +131,20 @@ class Building {
       console.info(`%c${emoji} Unit produced`, "color:limegreen");
       console.info(newUnit);
     }
+  }
+
+  startProducingUnits() {
+    // Calculate the interval based on the color.green value
+    // Assuming a higher green value results in a shorter interval
+    const interval = 255000 / this.color.green;
+
+    // Clear any existing interval for this building
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+
+    // Start a new interval for producing units
+    this.intervalId = setInterval(() => this.produceUnits(), interval);
   }
 
   findEmptyCells() {
@@ -200,7 +215,8 @@ canvas.addEventListener("click", function (event) {
   // Create a new building at the clicked location
   // For simplicity, we'll use a fixed color and size for now
   placeBuilding(gridX, gridY);
-
+  const lastBuilding = buildings.at(-1);
+  lastBuilding.startProducingUnits();
   // Redraw the canvas to include the new building
   init();
 });
@@ -221,8 +237,3 @@ function init() {
 
 // Start the game
 init();
-
-// Start producing units for each building every 2 seconds
-setInterval(() => {
-  buildings.forEach((building) => building.produceUnits());
-}, 2000);
