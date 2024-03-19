@@ -29,6 +29,42 @@ function drawGrid() {
   }
 }
 
+class Unit {
+  constructor(color, x, y) {
+    this.color = color;
+    this.attack = color.red; // Assuming red affects attack
+    this.defense = color.blue; // Assuming blue affects defense
+    this.agility = color.green; // Assuming green affects agility
+    this.x = x; // Add x position
+    this.y = y; // Add y position
+  }
+
+  draw(ctx, x, y) {
+    const radius = cellSize / 2; // Assuming cellSize is the size of the cell
+    const centerX = x * cellSize + radius;
+    const centerY = y * cellSize + radius;
+    const shapeType = 6;
+    const angle = (2 * Math.PI) / shapeType;
+
+    ctx.beginPath();
+    for (let i = 0; i < shapeType; i++) {
+      let xx = centerX + radius * Math.cos(angle * i);
+      let yy = centerY + radius * Math.sin(angle * i);
+      if (i === 0) {
+        ctx.moveTo(xx, yy);
+      } else {
+        ctx.lineTo(xx, yy);
+      }
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgb(${this.color.red}, ${this.color.green}, ${this.color.blue})`;
+    ctx.fill();
+    ctx.strokeStyle = "#ccc"; // Light stroke color
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
 class Building {
   constructor(x, y, width, height, color) {
     this.x = x;
@@ -63,10 +99,73 @@ class Building {
   static existsAt(x, y, buildings) {
     return buildings.some((building) => building.x === x && building.y === y);
   }
+
+  produceUnits() {
+    const emptyCells = this.findEmptyCells();
+    if (emptyCells.length === 0) {
+      console.log("No empty cells next to the building.");
+      return;
+    }
+    const unitColor = this.color; // Assuming the building's color affects the unit's stats
+    const [x, y] = emptyCells[0]; // Assuming you have logic to determine the x and y positions
+    const newUnit = new Unit(unitColor, x, y); // Pass x and y to the constructor
+    newUnit.draw(ctx, x, y);
+    units.push(newUnit); // Add the new unit to the units array
+
+    {
+      const maxStat = Math.max(
+        newUnit.attack,
+        newUnit.defense,
+        newUnit.agility
+      );
+      let emoji = "";
+      if (maxStat === newUnit.attack) {
+        emoji = "⚔";
+      } else if (maxStat === newUnit.defense) {
+        emoji = "🛡";
+      } else {
+        emoji = "⚡"; // Using ⚡ for agility, you can change this to any other emoji you prefer
+      }
+
+      console.info(`%c${emoji} Unit produced`, "color:limegreen");
+      console.info(newUnit);
+    }
+  }
+
+  findEmptyCells() {
+    const directions = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ]; // Right, Down, Left, Up
+    const emptyCells = [];
+
+    for (const [dx, dy] of directions) {
+      const newX = this.x + dx;
+      const newY = this.y + dy;
+
+      // Check if the cell is within the grid bounds and not occupied by a building or unit
+      if (
+        newX >= 0 &&
+        newX < gridWidth &&
+        newY >= 0 &&
+        newY < gridHeight &&
+        !Building.existsAt(newX, newY, buildings) &&
+        !units.some((unit) => unit.x === newX && unit.y === newY) // Check if the cell is not occupied by a unit
+      ) {
+        emptyCells.push([newX, newY]);
+      }
+    }
+
+    return emptyCells;
+  }
 }
 
 // Initialize the list of buildings
 const buildings = [];
+// Initialize the list of units
+const units = [];
 
 function placeBuilding(x, y) {
   if (Building.existsAt(x, y, buildings)) {
@@ -106,7 +205,6 @@ canvas.addEventListener("click", function (event) {
   init();
 });
 
-// Modify the init function to clear the canvas and then draw the grid and all buildings
 function init() {
   // Clear the entire canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -116,7 +214,15 @@ function init() {
 
   // Draw all buildings
   buildings.forEach((building) => building.draw(ctx));
+
+  // Draw all units
+  units.forEach((unit) => unit.draw(ctx, unit.x, unit.y));
 }
 
 // Start the game
 init();
+
+// Start producing units for each building every 2 seconds
+setInterval(() => {
+  buildings.forEach((building) => building.produceUnits());
+}, 2000);
